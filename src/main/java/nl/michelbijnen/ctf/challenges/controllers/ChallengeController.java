@@ -2,6 +2,7 @@ package nl.michelbijnen.ctf.challenges.controllers;
 
 import nl.michelbijnen.ctf.challenges.dtos.ChallengeDto;
 import nl.michelbijnen.ctf.challenges.dtos.CheckFlagDto;
+import nl.michelbijnen.ctf.challenges.dtos.CreateChallengeDto;
 import nl.michelbijnen.ctf.challenges.model.Challenge;
 import nl.michelbijnen.ctf.challenges.model.User;
 import nl.michelbijnen.ctf.challenges.repositories.ChallengeRepository;
@@ -14,9 +15,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 public class ChallengeController {
@@ -99,5 +103,37 @@ public class ChallengeController {
         }
 
         return ResponseEntity.ok(challengeDtos);
+    }
+
+    @PostMapping("/")
+    public ResponseEntity createChallenge(@RequestBody CreateChallengeDto createChallengeDto) throws URISyntaxException {
+        if (!createChallengeDto.getFlag().toLowerCase().startsWith("kekctf{") || !createChallengeDto.getFlag().toLowerCase().endsWith("}")) {
+            createChallengeDto.setFlag("kekctf{" + createChallengeDto.getFlag() + "}");
+        } else {
+            String flag = createChallengeDto.getFlag();
+            flag = flag.substring(7, flag.length() - 1);
+            flag = "kekctf{" + flag + "}";
+            createChallengeDto.setFlag(flag);
+        }
+
+        if (createChallengeDto.getPoints() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Points can't be equal or lower then 0");
+        }
+
+        if (createChallengeDto.getTitle().trim().equals("") || createChallengeDto.getDescription().trim().equals("")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Some fields are not filled in");
+        }
+
+        Challenge challenge = new Challenge(
+                UUID.randomUUID().toString(),
+                createChallengeDto.getTitle(),
+                createChallengeDto.getDescription(),
+                createChallengeDto.getFileURL(),
+                createChallengeDto.getFlag(),
+                createChallengeDto.getPoints()
+        );
+
+        this.challengeRepository.save(challenge);
+        return ResponseEntity.created(new URI("/" + challenge.getId())).build();
     }
 }
