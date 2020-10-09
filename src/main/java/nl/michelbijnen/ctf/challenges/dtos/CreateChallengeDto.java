@@ -6,6 +6,7 @@ import lombok.Data;
 public class CreateChallengeDto {
     private String title;
     private String description;
+    private String category;
     private String fileURL;
     private String flag;
     private int points;

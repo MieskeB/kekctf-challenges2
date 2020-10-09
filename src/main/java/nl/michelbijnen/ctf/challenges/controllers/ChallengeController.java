@@ -86,6 +86,7 @@ public class ChallengeController {
             challengeDto.setId(challenge.getId());
             challengeDto.setTitle(challenge.getTitle());
             challengeDto.setDescription(challenge.getDescription());
+            challengeDto.setCategory(challenge.getCategory());
             challengeDto.setFileURL(challenge.getFileURL());
             challengeDto.setPoints(challenge.getPoints());
 
@@ -128,6 +129,7 @@ public class ChallengeController {
                 UUID.randomUUID().toString(),
                 createChallengeDto.getTitle(),
                 createChallengeDto.getDescription(),
+                createChallengeDto.getCategory(),
                 createChallengeDto.getFileURL(),
                 createChallengeDto.getFlag(),
                 createChallengeDto.getPoints()
