@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -20,4 +21,6 @@ public class User {
     private String hash;
     private String salt;
     private String secretKey;
+    @ElementCollection
+    private List<String> role;
 }
