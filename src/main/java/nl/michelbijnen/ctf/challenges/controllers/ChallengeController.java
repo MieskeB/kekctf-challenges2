@@ -68,6 +68,45 @@ public class ChallengeController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    @GetMapping("/{challengeId}")
+    public ResponseEntity<ChallengeDto> getChallenge(@RequestHeader String requestingUserId, @PathVariable String challengeId) {
+        Optional<User> optionalUser = this.userRepository.findById(requestingUserId);
+        if (!optionalUser.isPresent()) {
+            this.logger.warn("'" + requestingUserId + "' tried to get a challenge with not existing user id");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User id does not exist");
+        }
+
+        User user = optionalUser.get();
+
+        Optional<Challenge> optionalChallenge = this.challengeRepository.findById(challengeId);
+        if (!optionalChallenge.isPresent()) {
+            this.logger.warn("'" + requestingUserId + "' tried to get a challenge with not existing challenge id");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Challenge id does not exist");
+        }
+
+        Challenge challenge = optionalChallenge.get();
+
+        ChallengeDto challengeDto = new ChallengeDto();
+        challengeDto.setId(challenge.getId());
+        challengeDto.setTitle(challenge.getTitle());
+        challengeDto.setDescription(challenge.getDescription());
+        challengeDto.setCategory(challenge.getCategory());
+        challengeDto.setFileURL(challenge.getFileURL());
+        challengeDto.setPoints(challenge.getPoints());
+
+        // Get if challenge is solved
+        challengeDto.setSolved(false);
+        List<Challenge> solvedChallenges = user.getTeam().getSolvedChallenges();
+        for (Challenge solvedChallenge : solvedChallenges) {
+            if (solvedChallenge.getId().equals(challenge.getId())) {
+                challengeDto.setSolved(true);
+                break;
+            }
+        }
+
+        return ResponseEntity.ok(challengeDto);
+    }
+
     @GetMapping("/")
     public ResponseEntity<List<ChallengeDto>> getAllChallenges(@RequestHeader String requestingUserId) {
         Optional<User> optionalUser = this.userRepository.findById(requestingUserId);
