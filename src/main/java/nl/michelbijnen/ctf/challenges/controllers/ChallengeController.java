@@ -3,6 +3,7 @@ package nl.michelbijnen.ctf.challenges.controllers;
 import nl.michelbijnen.ctf.challenges.dtos.ChallengeDto;
 import nl.michelbijnen.ctf.challenges.dtos.CheckFlagDto;
 import nl.michelbijnen.ctf.challenges.dtos.CreateChallengeDto;
+import nl.michelbijnen.ctf.challenges.dtos.UpdateChallengeDto;
 import nl.michelbijnen.ctf.challenges.model.Challenge;
 import nl.michelbijnen.ctf.challenges.model.User;
 import nl.michelbijnen.ctf.challenges.repositories.ChallengeRepository;
@@ -40,7 +41,7 @@ public class ChallengeController {
         }
 
         Challenge challenge = optionalChallenge.get();
-        if (!challenge.getFlag().equals(checkFlagDto.getFlag())) {
+        if (!challenge.getFlag().equals(this.formatFlag(checkFlagDto.getFlag()))) {
             this.logger.warn("'" + requestingUserId + "' has entered the wrong flag for challenge id '" + challengeId + "'");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Wrong flag");
         }
@@ -147,20 +148,13 @@ public class ChallengeController {
 
     @PostMapping("/")
     public ResponseEntity createChallenge(@RequestBody CreateChallengeDto createChallengeDto) throws URISyntaxException {
-        if (!createChallengeDto.getFlag().toLowerCase().startsWith("kekctf{") || !createChallengeDto.getFlag().toLowerCase().endsWith("}")) {
-            createChallengeDto.setFlag("kekctf{" + createChallengeDto.getFlag() + "}");
-        } else {
-            String flag = createChallengeDto.getFlag();
-            flag = flag.substring(7, flag.length() - 1);
-            flag = "kekctf{" + flag + "}";
-            createChallengeDto.setFlag(flag);
-        }
-
         if (createChallengeDto.getPoints() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Points can't be equal or lower then 0");
         }
 
-        if (createChallengeDto.getTitle().trim().equals("") || createChallengeDto.getDescription().trim().equals("")) {
+        if (createChallengeDto.getTitle().trim().equals("") ||
+                createChallengeDto.getDescription().trim().equals("") ||
+                createChallengeDto.getFlag().trim().equals("")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Some fields are not filled in");
         }
 
@@ -170,7 +164,7 @@ public class ChallengeController {
                 createChallengeDto.getDescription(),
                 createChallengeDto.getCategory(),
                 createChallengeDto.getFileURL(),
-                createChallengeDto.getFlag(),
+                this.formatFlag(createChallengeDto.getFlag()),
                 createChallengeDto.getPoints()
         );
 
@@ -182,5 +176,45 @@ public class ChallengeController {
     public ResponseEntity deleteChallenge(@PathVariable String challengeId) {
         this.challengeRepository.deleteById(challengeId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{challengeId}")
+    public ResponseEntity updateChallenge(@PathVariable String challengeId, @RequestBody UpdateChallengeDto updateChallengeDto) {
+        Optional<Challenge> optionalChallenge = this.challengeRepository.findById(challengeId);
+        if (!optionalChallenge.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Challenge id does not exist");
+        }
+
+        Challenge challenge = optionalChallenge.get();
+
+        if (!updateChallengeDto.getTitle().trim().equals("")) {
+            challenge.setTitle(updateChallengeDto.getTitle());
+        }
+        if (!updateChallengeDto.getDescription().trim().equals("")) {
+            challenge.setDescription(updateChallengeDto.getDescription());
+        }
+        if (updateChallengeDto.getPoints() > 0) {
+            challenge.setPoints(updateChallengeDto.getPoints());
+        }
+        if (!updateChallengeDto.getCategory().trim().equals("")) {
+            challenge.setCategory(updateChallengeDto.getCategory());
+        }
+        if (!updateChallengeDto.getFlag().trim().equals("")) {
+            challenge.setFlag(this.formatFlag(updateChallengeDto.getFlag()));
+        }
+
+        this.challengeRepository.save(challenge);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    private String formatFlag(String flag) {
+        if (!flag.toLowerCase().startsWith("kekctf{") || !flag.toLowerCase().endsWith("}")) {
+            return "kekctf{" + flag + "}";
+        } else {
+            flag = flag.substring(7, flag.length() - 1);
+            flag = "kekctf{" + flag + "}";
+            return flag;
+        }
     }
 }
