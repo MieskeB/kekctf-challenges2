@@ -177,4 +177,10 @@ public class ChallengeController {
         this.challengeRepository.save(challenge);
         return ResponseEntity.created(new URI("/" + challenge.getId())).build();
     }
+
+    @DeleteMapping("/{challengeId}")
+    public ResponseEntity deleteChallenge(@PathVariable String challengeId) {
+        this.challengeRepository.deleteById(challengeId);
+        return ResponseEntity.noContent().build();
+    }
 }
